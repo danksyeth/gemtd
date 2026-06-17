@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Gem TD — Lapidary</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ruby:#ff4d6a; --sapphire:#4f86ff; --diamond:#e6f3ff; --emerald:#2fd683;
+    --amethyst:#b577ff; --topaz:#ffcb3d; --aquamarine:#37e3cf; --opal:#cdd6ea;
+    --bg:#0a0c12; --bg2:#0e1119; --panel:#12162099; --panel-solid:#121620;
+    --line:#222b3e; --line2:#2c3650; --text:#e7ecf6; --muted:#8893ab;
+    --gold:#ffd166; --life:#ff6b6b; --good:#56e39f; --bad:#ff6b6b;
+    --display:'Rajdhani',system-ui,sans-serif;
+    --mono:'Spline Sans Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:
+      radial-gradient(1200px 700px at 50% -10%, #161c2b 0%, transparent 60%),
+      radial-gradient(900px 600px at 110% 110%, #15212b 0%, transparent 55%),
+      var(--bg);
+    color:var(--text); font-family:var(--mono);
+    -webkit-font-smoothing:antialiased; overflow:hidden;
+  }
+  #app{display:flex;flex-direction:column;height:100vh;width:100vw}
+
+  header{
+    display:flex;align-items:center;gap:18px;padding:10px 18px;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,#10141f,#0c0f17);
+  }
+  .brand{display:flex;align-items:baseline;gap:10px}
+  .brand h1{
+    font-family:var(--display);font-weight:700;font-size:24px;letter-spacing:2px;
+    background:linear-gradient(90deg,var(--aquamarine),var(--amethyst),var(--ruby));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .brand .sub{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:3px;text-transform:uppercase}
+  .stats{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+  .stat{
+    display:flex;flex-direction:column;align-items:flex-start;justify-content:center;
+    padding:5px 12px;border:1px solid var(--line);border-radius:8px;background:var(--panel);min-width:74px;
+  }
+  .stat .k{font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;font-family:var(--display);font-weight:600}
+  .stat .v{font-family:var(--display);font-weight:700;font-size:20px;line-height:1;letter-spacing:.5px}
+  .v.gold{color:var(--gold)} .v.life{color:var(--life)} .v.wave{color:var(--aquamarine)}
+
+  main{flex:1;display:flex;min-height:0}
+  #stage{
+    flex:1;display:flex;align-items:center;justify-content:center;position:relative;
+    padding:14px;min-width:0;
+  }
+  #board-wrap{position:relative;box-shadow:0 0 0 1px var(--line2),0 24px 60px #000a, inset 0 0 80px #0008;border-radius:10px;overflow:hidden}
+  canvas{display:block;background:#070910;touch-action:none}
+
+  /* floating phase prompt */
+  #prompt{
+    position:absolute;left:50%;top:14px;transform:translateX(-50%);
+    padding:7px 16px;border-radius:999px;font-family:var(--display);font-weight:600;
+    letter-spacing:1px;font-size:14px;border:1px solid var(--line2);
+    background:#0e1320ee;backdrop-filter:blur(6px);white-space:nowrap;pointer-events:none;
+    transition:opacity .2s; box-shadow:0 6px 20px #0006;
+  }
+  #prompt b{color:var(--aquamarine)}
+
+  aside{
+    width:330px;border-left:1px solid var(--line);background:linear-gradient(180deg,#0d111a,#0b0e16);
+    display:flex;flex-direction:column;min-height:0;
+  }
+  .panel-scroll{overflow-y:auto;padding:14px;flex:1;display:flex;flex-direction:column;gap:12px}
+  .panel-scroll::-webkit-scrollbar{width:8px}
+  .panel-scroll::-webkit-scrollbar-thumb{background:var(--line2);border-radius:4px}
+
+  .card{border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:12px}
+  .card h3{
+    font-family:var(--display);font-weight:700;font-size:12px;letter-spacing:2px;text-transform:uppercase;
+    color:var(--muted);margin-bottom:9px;display:flex;align-items:center;gap:8px
+  }
+  .card h3 .pip{width:6px;height:6px;border-radius:1px;transform:rotate(45deg);background:var(--aquamarine)}
+
+  .btn{
+    font-family:var(--display);font-weight:700;letter-spacing:1px;font-size:14px;text-transform:uppercase;
+    border:1px solid var(--line2);border-radius:9px;background:#161c2b;color:var(--text);
+    padding:11px 14px;cursor:pointer;width:100%;transition:.12s;display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .btn:hover{border-color:var(--aquamarine);background:#1a2233}
+  .btn:active{transform:translateY(1px)}
+  .btn.primary{background:linear-gradient(180deg,#1c3a44,#143038);border-color:#2f6b6b;color:#bff6ee}
+  .btn.primary:hover{border-color:var(--aquamarine);box-shadow:0 0 0 1px var(--aquamarine) inset, 0 6px 18px #0aa6}
+  .btn.on{background:linear-gradient(180deg,#3a2350,#281a3a);border-color:var(--amethyst);color:#e8d6ff}
+  .btn:disabled{opacity:.4;cursor:not-allowed;border-color:var(--line)}
+  .btn.sm{font-size:12px;padding:8px 10px}
+  .row{display:flex;gap:8px}
+
+  .charges{display:flex;gap:6px;margin-top:8px;justify-content:center}
+  .charge{width:18px;height:18px;border-radius:3px;transform:rotate(45deg);border:1px solid var(--line2);background:#0c0f18}
+  .charge.full{background:radial-gradient(circle at 50% 40%,#fff,var(--aquamarine));box-shadow:0 0 8px var(--aquamarine)}
+
+  /* selected gem info */
+  #sel{display:none}
+  #sel.show{display:block}
+  .sel-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  .sel-chip{width:38px;height:38px;border-radius:8px;flex:none;position:relative}
+  .sel-name{font-family:var(--display);font-weight:700;font-size:17px;letter-spacing:.5px;line-height:1.05}
+  .sel-q{font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase}
+  .sel-desc{font-size:11.5px;color:#c4ccdd;line-height:1.5;margin-bottom:8px}
+  .kv{display:grid;grid-template-columns:1fr 1fr;gap:5px 10px;font-size:11px}
+  .kv div{display:flex;justify-content:space-between;border-bottom:1px dotted #2a3346;padding-bottom:3px}
+  .kv .lab{color:var(--muted)} .kv .num{color:var(--text);font-weight:500}
+
+  .legend{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  .lg{display:flex;align-items:center;gap:7px;font-size:11px;color:#c4ccdd}
+  .lg .dot{width:13px;height:13px;border-radius:3px;transform:rotate(45deg);flex:none;box-shadow:0 0 6px currentColor}
+  .lg small{display:block;color:var(--muted);font-size:9.5px;letter-spacing:.3px}
+
+  details{border-top:1px solid var(--line);padding-top:8px}
+  details summary{cursor:pointer;font-family:var(--display);font-weight:700;font-size:11px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;list-style:none}
+  details summary::-webkit-details-marker{display:none}
+  details summary::before{content:'▸ ';color:var(--aquamarine)}
+  details[open] summary::before{content:'▾ '}
+  .recipe{font-size:11px;color:#c4ccdd;margin-top:7px;line-height:1.45}
+  .recipe b{color:var(--text)} .recipe .arw{color:var(--aquamarine)}
+
+  #combinebox{display:none}
+  #combinebox.show{display:block;border-color:var(--amethyst)}
+  .cmb-list{font-size:11.5px;line-height:1.6;color:#c4ccdd;margin:6px 0;min-height:20px}
+  .cmb-result{font-family:var(--display);font-weight:700;font-size:14px;letter-spacing:.5px;margin:6px 0}
+  .cmb-result.ok{color:var(--good)} .cmb-result.no{color:var(--muted)}
+
+  #log{font-size:11px;color:var(--muted);line-height:1.6;max-height:96px;overflow:hidden;display:flex;flex-direction:column-reverse}
+  #log div{opacity:.95}
+  #log div:first-child{color:var(--text)}
+
+  /* overlay screens */
+  #overlay{
+    position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+    background:radial-gradient(600px 400px at 50% 40%,#0d1422ee,#070910f6);z-index:20;text-align:center;
+  }
+  #overlay.show{display:flex}
+  .over-card{padding:30px 38px;border:1px solid var(--line2);border-radius:16px;background:#0e1320;box-shadow:0 30px 80px #000c;max-width:440px}
+  .over-card h2{font-family:var(--display);font-weight:700;font-size:40px;letter-spacing:2px;margin-bottom:6px}
+  .over-card p{color:#c4ccdd;font-size:13px;line-height:1.6;margin-bottom:18px}
+  .over-card.win h2{color:var(--gold)} .over-card.lose h2{color:var(--life)}
+  .help-list{text-align:left;font-size:12px;color:#c4ccdd;line-height:1.7;margin:14px 0 18px}
+  .help-list b{color:var(--aquamarine)}
+
+  .hint{font-size:10.5px;color:var(--muted);text-align:center;margin-top:6px;line-height:1.5}
+  kbd{background:#1a2233;border:1px solid var(--line2);border-radius:4px;padding:1px 5px;font-size:10px;color:var(--text)}
+
+  @media (max-width:880px){
+    aside{width:280px}
+    .legend{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand">
+      <h1>GEM&nbsp;TD</h1>
+      <span class="sub">lapidary defense</span>
+    </div>
+    <div class="stats">
+      <div class="stat"><span class="k">Wave</span><span class="v wave" id="s-wave">0/20</span></div>
+      <div class="stat"><span class="k">Lives</span><span class="v life" id="s-lives">20</span></div>
+      <div class="stat"><span class="k">Gold</span><span class="v gold" id="s-gold">0</span></div>
+      <div class="stat"><span class="k">Cutter Lv</span><span class="v" id="s-level">1</span></div>
+    </div>
+  </header>
+
+  <main>
+    <div id="stage">
+      <div id="board-wrap">
+        <canvas id="game"></canvas>
+        <div id="prompt">Loading…</div>
+        <div id="overlay">
+          <div class="over-card" id="over-card">
+            <h2 id="over-title">GEM TD</h2>
+            <p id="over-sub">Build a maze of gems. Each wave you place 5 random gems — then keep just one. The rest crystallize into rock walls that lengthen the creeps' path.</p>
+            <div class="help-list" id="over-help">
+              <div>◆ <b>Place 5</b> gems each wave by clicking the field.</div>
+              <div>◆ After the wave, <b>keep 1</b> — the other 4 become rock walls.</div>
+              <div>◆ <b>Combine</b> two matching gems to upgrade their quality, or follow a recipe for a powerful special gem.</div>
+              <div>◆ Leave creeps a path to the exit — you can't wall them off completely.</div>
+            </div>
+            <button class="btn primary" id="over-btn">Start Cutting</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside>
+      <div class="panel-scroll">
+        <div class="card">
+          <h3><span class="pip"></span>Phase</h3>
+          <button class="btn primary" id="btn-main">Start Wave</button>
+          <div class="charges" id="charges"></div>
+          <div class="row" style="margin-top:9px">
+            <button class="btn sm" id="btn-combine">◈ Combine</button>
+            <button class="btn sm" id="btn-speed">▶ 1×</button>
+          </div>
+          <div class="hint" id="phase-hint">Click the field to place a gem.</div>
+        </div>
+
+        <div class="card" id="combinebox">
+          <h3><span class="pip" style="background:var(--amethyst)"></span>Combine</h3>
+          <div style="font-size:11px;color:var(--muted);line-height:1.5">Select gems on the board. Two matching gems upgrade; a valid recipe forges a special gem.</div>
+          <div class="cmb-list" id="cmb-list">Nothing selected.</div>
+          <div class="cmb-result no" id="cmb-result">—</div>
+          <div class="row">
+            <button class="btn sm primary" id="btn-forge" disabled>Forge</button>
+            <button class="btn sm" id="btn-clearsel">Clear</button>
+          </div>
+        </div>
+
+        <div class="card" id="sel">
+          <div class="sel-head">
+            <div class="sel-chip" id="sel-chip"></div>
+            <div>
+              <div class="sel-name" id="sel-name">—</div>
+              <div class="sel-q" id="sel-qual">—</div>
+            </div>
+          </div>
+          <div class="sel-desc" id="sel-desc"></div>
+          <div class="kv" id="sel-kv"></div>
+          <button class="btn sm" id="btn-reroll" style="margin-top:10px;display:none">↻ Reroll — 12g</button>
+        </div>
+
+        <div class="card">
+          <h3><span class="pip"></span>Gem types</h3>
+          <div class="legend" id="legend"></div>
+          <details style="margin-top:10px">
+            <summary>Recipes</summary>
+            <div id="recipes"></div>
+          </details>
+        </div>
+
+        <div class="card">
+          <h3><span class="pip"></span>Log</h3>
+          <div id="log"></div>
+        </div>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   GEM TD — standalone (single file). Canvas game + DOM HUD.
+   Core loop: place 5 random gems -> fight wave -> keep 1,
+   rest become rock walls. Combine to upgrade / forge specials.
+   ============================================================ */
+
+//// ---------- Config ----------
+const COLS = 24, ROWS = 18;          // includes 1-cell border walls
+let CELL = 30;                        // px (recomputed responsively)
+const QNAMES = ["Chipped","Flawed","Normal","Flawless","Perfect"];
+const QMULT  = [1, 1.7, 2.8, 4.5, 7];     // stat multiplier per quality
+const MAX_WAVE = 20;
+const START_LIVES = 20, START_GOLD = 0, GEMS_PER_WAVE = 5;
+
+// gem archetypes (base = Chipped values, scaled by QMULT)
+const GEMS = {
+  ruby:      {name:"Ruby",      color:"#ff4d6a", abil:"splash",  dmg:14, range:2.6, rate:1.0, splash:1.2,  blurb:"Fiery splash damage to a small area."},
+  sapphire:  {name:"Sapphire",  color:"#4f86ff", abil:"slow",    dmg:8,  range:2.9, rate:1.0, slow:.40, slowDur:1.6, blurb:"Chills enemies, slowing their movement."},
+  diamond:   {name:"Diamond",   color:"#e6f3ff", abil:"crit",    dmg:24, range:3.1, rate:.9, crit:.22, critx:2.6, pierce:true, blurb:"High single-target white damage. Ignores armor, can crit."},
+  emerald:   {name:"Emerald",   color:"#2fd683", abil:"poison",  dmg:5,  range:2.7, rate:1.1, pdps:11, pdur:3, blurb:"Injects venom — damage over time that stacks."},
+  amethyst:  {name:"Amethyst",  color:"#b577ff", abil:"chain",   dmg:11, range:2.9, rate:.9, chain:3, falloff:.7, stun:.12, blurb:"Arc lightning that jumps between enemies."},
+  topaz:     {name:"Topaz",     color:"#ffcb3d", abil:"fast",    dmg:6,  range:2.5, rate:2.7, blurb:"Rapid-fire attacks — great against swarms."},
+  aquamarine:{name:"Aquamarine",color:"#37e3cf", abil:"multi",   dmg:9,  range:2.8, rate:1.0, targets:2, armorcut:2, blurb:"Strikes several foes and shreds their armor."},
+  opal:      {name:"Opal",      color:"#cdd6ea", abil:"aura",    dmg:4,  range:2.6, rate:1.0, auraDmg:.14, auraRange:2.6, blurb:"Refracts light — buffs damage & range of nearby gems."},
+};
+const GEM_KEYS = Object.keys(GEMS);
+
+// Special gems (forged via recipes). isSpecial=true, fixed quality-ish stats.
+const SPECIALS = {
+  malachite:  {name:"Malachite",   color:"#3fd07a", abil:"multi",  dmg:18, range:3.0, rate:1.4, targets:4, armorcut:0, special:true, blurb:"Multi-target spray — hits the whole front line."},
+  starruby:   {name:"Star Ruby",   color:"#ff5c7a", abil:"splash", dmg:30, range:3.0, rate:.9, splash:1.4, stun:.25, stunDur:.5, special:true, blurb:"Splash with a chance to stun. Cracks bosses."},
+  pinkdiamond:{name:"Pink Diamond",color:"#ff9ad1", abil:"crit",   dmg:92, range:3.6, rate:.8, crit:.30, critx:2.6, pierce:true, special:true, blurb:"Devastating single-target damage. Ignores armor."},
+  bloodstone: {name:"Blood Stone", color:"#c8324a", abil:"splash", dmg:55, range:3.2, rate:.9, splash:1.9, special:true, blurb:"The strongest area-of-effect gem in the deck."},
+  redcrystal: {name:"Red Crystal", color:"#ff3344", abil:"crit",   dmg:70, range:3.4, rate:1.2, crit:.18, critx:2.2, pierce:true, special:true, blurb:"Lethal precision damage at long range."},
+  blackopal:  {name:"Black Opal",  color:"#7b6cff", abil:"aura",   dmg:24, range:3.2, rate:1.0, auraDmg:.32, auraRange:3.2, special:true, blurb:"Powerful damage & range aura — the keystone of any maze."},
+  uranium:    {name:"Uranium 238", color:"#b6ff3a", abil:"gold",   dmg:42, range:3.0, rate:1.0, goldmul:1.6, special:true, blurb:"Radiant decay — solid damage and +60% bounty on its kills."},
+};
+
+// Recipes: ingredient = {type, q} ; type 'any' = wildcard ; q=-1 = any quality.
+const RECIPES = [
+  {out:"malachite",   ing:[{type:"opal",q:0},{type:"emerald",q:0},{type:"aquamarine",q:0}]},
+  {out:"starruby",    ing:[{type:"ruby",q:1},{type:"ruby",q:0},{type:"amethyst",q:-1}]},
+  {out:"pinkdiamond", ing:[{type:"diamond",q:4},{type:"diamond",q:2},{type:"topaz",q:2}]},
+  {out:"redcrystal",  ing:[{type:"emerald",q:3},{type:"ruby",q:2},{type:"amethyst",q:1}]},
+  {out:"bloodstone",  ing:[{type:"ruby",q:4},{type:"aquamarine",q:3},{type:"amethyst",q:2}]},
+  {out:"blackopal",   ing:[{type:"opal",q:4},{type:"diamond",q:3},{type:"aquamarine",q:2}]},
+  {out:"uranium",     ing:[{type:"any",q:4},{type:"any",q:4},{type:"any",q:4},{type:"any",q:4}]},
+];
+
+//// ---------- DOM ----------
+const $ = id => document.getElementById(id);
+const canvas = $("game"), ctx = canvas.getContext("2d");
+const elPrompt=$("prompt"), elLog=$("log");
+
+//// ---------- State ----------
+let grid;          // 0 walkable, 1 blocked
+let dist, next;    // flow field (cells)
+let gems = [];     // {id,type,q,col,row,x,y,temp,special,cd, aura cache...}
+let creeps = [];
+let fx = [];       // visual effects
+let beams = [];    // visual attack beams
+let spawnCell, exitCell;
+let state = "menu"; // menu|build|wave|pick|over
+let wave = 0, lives = START_LIVES, gold = START_GOLD;
+let xp = 0, cutterLvl = 1, xpNext = 8;
+let placed = 0;     // temp gems placed this build phase
+let toSpawn = 0, spawnTimer = 0, waveDef=null;
+let selected = null;       // selected gem (info)
+let combineMode = false, combineSel = [];
+let speed = 1;
+let gemIdSeq = 1;
+let hoverCell = {c:-1,r:-1};
+let lastTs = 0;
+
+//// ---------- Helpers ----------
+const idx = (c,r) => r*COLS+c;
+const inBounds = (c,r) => c>=0&&c<COLS&&r>=0&&r<ROWS;
+const cellCenter = (c,r) => ({x:c*CELL+CELL/2, y:r*CELL+CELL/2});
+const rand = a => a[(Math.random()*a.length)|0];
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+
+function log(msg,cls){
+  const d=document.createElement("div");
+  d.textContent=msg; if(cls) d.style.color=`var(--${cls})`;
+  elLog.prepend(d);
+  while(elLog.children.length>8) elLog.lastChild.remove();
+}
+function gemDef(g){ return g.special ? SPECIALS[g.type] : GEMS[g.type]; }
+function qmul(g){ return g.special ? 1 : QMULT[g.q]; }
+function gemStat(g,key){ const d=gemDef(g); return (d[key]||0)*(g.special?1:QMULT[g.q]); }
+function gemColor(g){ return gemDef(g).color; }
+function gemName(g){ const d=gemDef(g); return g.special ? d.name : QNAMES[g.q]+" "+d.name; }
+
+//// ---------- Responsive sizing ----------
+function resize(){
+  const wrap=$("stage");
+  const availW = wrap.clientWidth-28, availH = wrap.clientHeight-28;
+  CELL = Math.max(20, Math.floor(Math.min(availW/COLS, availH/ROWS)));
+  canvas.width = COLS*CELL; canvas.height = ROWS*CELL;
+  for(const g of gems){ const c=cellCenter(g.col,g.row); g.x=c.x; g.y=c.y; }
+}
+window.addEventListener("resize", ()=>{ resize(); });
+
+//// ---------- Grid / pathfinding ----------
+function buildGrid(){
+  grid = new Uint8Array(COLS*ROWS);
+  for(let c=0;c<COLS;c++){ grid[idx(c,0)]=1; grid[idx(c,ROWS-1)]=1; }
+  for(let r=0;r<ROWS;r++){ grid[idx(0,r)]=1; grid[idx(COLS-1,r)]=1; }
+  spawnCell={c:(COLS/2)|0, r:0}; exitCell={c:(COLS/2)|0, r:ROWS-1};
+  grid[idx(spawnCell.c,spawnCell.r)]=0;       // open entrance gap
+  grid[idx(exitCell.c,exitCell.r)]=0;         // open exit gap
+}
+function computeFlow(blockTest){
+  // BFS from exit over walkable cells. blockTest optional {c,r} treated blocked.
+  const D=new Int32Array(COLS*ROWS).fill(-1);
+  const blocked=(c,r)=>{
+    if(grid[idx(c,r)]) return true;
+    if(blockTest && blockTest.c===c && blockTest.r===r) return true;
+    return false;
+  };
+  const q=[]; const ei=idx(exitCell.c,exitCell.r);
+  D[ei]=0; q.push(exitCell);
+  const dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+  let head=0;
+  while(head<q.length){
+    const {c,r}=q[head++]; const d=D[idx(c,r)];
+    for(const [dc,dr] of dirs){
+      const nc=c+dc, nr=r+dr;
+      if(!inBounds(nc,nr)) continue;
+      const ni=idx(nc,nr);
+      if(D[ni]!==-1) continue;
+      if(blocked(nc,nr)) continue;
+      D[ni]=d+1; q.push({c:nc,r:nr});
+    }
+  }
+  return D;
+}
+function pathExistsWith(blockTest){
+  const D=computeFlow(blockTest);
+  return D[idx(spawnCell.c,spawnCell.r)]!==-1;
+}
+function rebuildFlow(){
+  dist = computeFlow(null);
+  next = new Int32Array(COLS*ROWS).fill(-1);
+  const dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+  for(let r=1;r<ROWS-1;r++) for(let c=1;c<COLS-1;c++){
+    const i=idx(c,r); if(dist[i]===-1) continue;
+    let best=dist[i], bi=-1;
+    for(const [dc,dr] of dirs){
+      const nc=c+dc,nr=r+dr; if(!inBounds(nc,nr)) continue;
+      const ni=idx(nc,nr); if(dist[ni]===-1) continue;
+      if(dist[ni]<best){ best=dist[ni]; bi=ni; }
+    }
+    next[i]=bi;
+  }
+  // entrance routes downward
+  const si=idx(spawnCell.c,spawnCell.r);
+  if(dist[si]!==-1){
+    const below=idx(spawnCell.c,1);
+    next[si] = dist[below]!==-1 ? below : si;
+  }
+}
+
+//// ---------- Gem roll (quality odds scale with cutter level) ----------
+function rollQuality(){
+  const base=[68,22,7,2.5,0.5];
+  const delta=[-7,-1.5,3.5,3,2];   // per cutter level above 1
+  const lv=cutterLvl-1;
+  let w=base.map((b,i)=>Math.max(0.2, b+delta[i]*lv));
+  const sum=w.reduce((a,b)=>a+b,0);
+  let roll=Math.random()*sum, acc=0;
+  for(let i=0;i<5;i++){ acc+=w[i]; if(roll<acc) return i; }
+  return 0;
+}
+function makeGem(type,q,col,row,temp,special){
+  const c=cellCenter(col,row);
+  return {id:gemIdSeq++, type, q:q||0, col, row, x:c.x, y:c.y, temp:!!temp,
+          special:!!special, cd:Math.random()*0.3, ad:0, abuf:0, rbuf:0};
+}
+
+//// ---------- Build phase ----------
+function tryPlaceGem(c,r){
+  if(state!=="build" || combineMode) return;
+  if(placed>=GEMS_PER_WAVE){ log("All 5 gems placed — start the wave.","muted"); return; }
+  if(!inBounds(c,r) || c===0||r===0||c===COLS-1||r===ROWS-1) return;
+  if(grid[idx(c,r)]) return;
+  if((c===spawnCell.c&&r===spawnCell.r)||(c===exitCell.c&&r===exitCell.r)) return;
+  if(!pathExistsWith({c,r})){ flashCell(c,r,"#ff6b6b"); log("Can't seal off the path — leave a route open.","bad"); return; }
+  const type=rand(GEM_KEYS), q=rollQuality();
+  const g=makeGem(type,q,c,r,true,false);
+  gems.push(g); grid[idx(c,r)]=1; placed++;
+  rebuildFlow(); recalcAuras();
+  fx.push({type:"place",x:g.x,y:g.y,t:0,life:.4,color:gemColor(g)});
+  selectGem(g);
+  updateHUD();
+  if(placed>=GEMS_PER_WAVE){ setPrompt('All 5 placed — press <b>Start Wave</b>'); }
+}
+function rerollSelected(){
+  if(state!=="build" || !selected || !selected.temp) return;
+  if(gold<12){ log("Need 12 gold to reroll.","bad"); return; }
+  gold-=12;
+  selected.type=rand(GEM_KEYS); selected.q=rollQuality();
+  fx.push({type:"place",x:selected.x,y:selected.y,t:0,life:.35,color:gemColor(selected)});
+  selectGem(selected); updateHUD();
+  log("Rerolled into "+gemName(selected)+".");
+}
+
+//// ---------- Waves ----------
+function waveStats(w){
+  const boss = w%5===0;
+  const hp = Math.round(42*Math.pow(1.205,w-1)) * (boss?9:1);
+  const count = boss ? 1 : 9+Math.floor(w*0.7);
+  const speed = boss ? 1.05 : (w%3===0?1.7:1.25);   // cells/sec
+  const armor = boss ? Math.min(40, 4+w) : Math.max(0, w-4);
+  const bounty = boss ? 26+w*3 : 3+Math.round(w*0.7);
+  const xpv = boss ? 18 : 2;
+  const liveCost = boss ? 6 : 1;
+  return {w,boss,hp,count,speed,armor,bounty,xpv,liveCost,
+          color: boss ? "#ff5c7a" : `hsl(${(w*47)%360} 70% 62%)`};
+}
+function startWave(){
+  if(state!=="build") return;
+  if(placed<GEMS_PER_WAVE){ log("Place all 5 gems first.","bad"); return; }
+  if(combineMode) toggleCombine();
+  wave++; waveDef=waveStats(wave);
+  recalcAuras();
+  toSpawn=waveDef.count; spawnTimer=0;
+  state="wave"; selectGem(null);
+  setPrompt(`Wave <b>${wave}</b>${waveDef.boss?" — BOSS":""} incoming`);
+  $("btn-main").textContent="Wave in progress…"; $("btn-main").disabled=true;
+  $("btn-combine").disabled=true;
+  log((waveDef.boss?"⚠ BOSS ":"")+"Wave "+wave+" begins.", waveDef.boss?"bad":null);
+  updateHUD();
+}
+function spawnCreep(){
+  const wd=waveDef; const c=cellCenter(spawnCell.c,spawnCell.r);
+  creeps.push({
+    x:c.x, y:c.y, hp:wd.hp, maxhp:wd.hp, baseSpeed:wd.speed*CELL, speed:wd.speed*CELL,
+    armor:wd.armor, baseArmor:wd.armor, bounty:wd.bounty, xpv:wd.xpv, liveCost:wd.liveCost,
+    boss:wd.boss, color:wd.color, slowU:0, stunU:0, poisons:[], armorDeb:0, armorDebU:0,
+    r:(wd.boss?CELL*0.40:CELL*0.26), dead:false,
+  });
+}
+
+//// ---------- Pick phase ----------
+function endWave(){
+  state="pick";
+  $("btn-main").textContent="Choose a gem to keep"; $("btn-main").disabled=true;
+  $("btn-combine").disabled=true;
+  setPrompt("Wave clear — <b>click a glowing gem to keep it</b>");
+  log("Wave "+wave+" cleared. Keep one gem.","good");
+  // highlight handled in render (temp gems pulse)
+  if(wave>=MAX_WAVE){ /* still let them keep, then win */ }
+}
+function keepGem(g){
+  if(state!=="pick" || !g.temp) return;
+  g.temp=false;
+  // others -> rocks
+  for(const o of gems){ if(o.temp){ o.temp=false; o.isRock=true; o.type=null; } }
+  gems = gems; // rocks stay as blockers (grid already blocked)
+  // remove rock gems from attack list but keep as wall markers
+  rebuildFlow();
+  fx.push({type:"keep",x:g.x,y:g.y,t:0,life:.7,color:gemColor(g)});
+  log("Kept "+gemName(g)+".");
+  placed=0;
+  if(wave>=MAX_WAVE){ win(); return; }
+  beginBuild();
+}
+function beginBuild(){
+  state="build"; selectGem(null);
+  $("btn-main").textContent="Start Wave"; $("btn-main").disabled=false;
+  $("btn-combine").disabled=false;
+  setPrompt(`Build phase — place <b>${GEMS_PER_WAVE}</b> gems`);
+  updateHUD();
+}
+
+//// ---------- Combine / forge ----------
+function multisetMatch(sel, ing){
+  if(sel.length!==ing.length) return false;
+  // backtracking assignment
+  const used=new Array(sel.length).fill(false);
+  function ok(i){
+    if(i===ing.length) return true;
+    const req=ing[i];
+    for(let j=0;j<sel.length;j++){
+      if(used[j]) continue;
+      const g=sel[j];
+      if(g.special) continue;
+      if(req.type!=="any" && g.type!==req.type) continue;
+      if(req.q!==-1 && g.q!==req.q) continue;
+      used[j]=true;
+      if(ok(i+1)) return true;
+      used[j]=false;
+    }
+    return false;
+  }
+  return ok(0);
+}
+function evalCombine(sel){
+  if(sel.length===2){
+    const [a,b]=sel;
+    if(!a.special&&!b.special&&a.type===b.type&&a.q===b.q&&a.q<4){
+      return {kind:"upgrade", out:{type:a.type,q:a.q+1,special:false},
+              label:QNAMES[a.q+1]+" "+GEMS[a.type].name};
+    }
+  }
+  for(const rc of RECIPES){
+    if(multisetMatch(sel, rc.ing)){
+      return {kind:"forge", out:{type:rc.out,q:0,special:true}, label:SPECIALS[rc.out].name};
+    }
+  }
+  return null;
+}
+function toggleCombine(){
+  combineMode=!combineMode;
+  $("btn-combine").classList.toggle("on",combineMode);
+  $("combinebox").classList.toggle("show",combineMode);
+  combineSel=[]; selectGem(null); refreshCombine();
+  setPrompt(combineMode ? "Combine — <b>select gems to forge</b>" :
+    (state==="build"?`Build phase — place <b>${GEMS_PER_WAVE-placed}</b> more`:""));
+}
+function clickCombine(g){
+  if(g.isRock) return;
+  const i=combineSel.indexOf(g);
+  if(i>=0) combineSel.splice(i,1);
+  else { if(combineSel.length<4) combineSel.push(g); }
+  refreshCombine();
+}
+function refreshCombine(){
+  const list=$("cmb-list"), res=$("cmb-result"), btn=$("btn-forge");
+  if(combineSel.length===0){ list.textContent="Nothing selected."; res.textContent="—"; res.className="cmb-result no"; btn.disabled=true; return; }
+  list.innerHTML = combineSel.map(g=>`<span style="color:${gemColor(g)}">●</span> ${gemName(g)}`).join("<br>");
+  const m=evalCombine(combineSel);
+  if(m){ res.innerHTML = (m.kind==="upgrade"?"⇧ Upgrade → ":"✦ Forge → ")+m.label; res.className="cmb-result ok"; btn.disabled=false; }
+  else { res.textContent="No matching recipe."; res.className="cmb-result no"; btn.disabled=true; }
+}
+function forge(){
+  const m=evalCombine(combineSel); if(!m) return;
+  const anchor=combineSel[0];
+  const col=anchor.col, row=anchor.row;
+  // free the other selected cells
+  for(let i=1;i<combineSel.length;i++){
+    const g=combineSel[i]; grid[idx(g.col,g.row)]=0;
+    const gi=gems.indexOf(g); if(gi>=0) gems.splice(gi,1);
+  }
+  // replace anchor with result
+  const gi=gems.indexOf(anchor); if(gi>=0) gems.splice(gi,1);
+  const ng=makeGem(m.out.type, m.out.q, col, row, false, m.out.special);
+  gems.push(ng); grid[idx(col,row)]=1;
+  rebuildFlow();
+  fx.push({type:"forge",x:ng.x,y:ng.y,t:0,life:.9,color:gemColor(ng)});
+  log((m.kind==="upgrade"?"Upgraded into ":"✦ Forged ")+gemName(ng)+"!", "good");
+  combineSel=[]; refreshCombine();
+  recalcAuras();
+}
+
+//// ---------- Combat ----------
+function recalcAuras(){
+  // reset, then apply opal/blackopal auras
+  for(const g of gems){ g.abuf=0; g.rbuf=0; }
+  for(const a of gems){
+    if(a.isRock) continue; const d=gemDef(a); if(!d||d.abil!=="aura") continue;
+    const aDmg=(d.auraDmg||0)*qmul(a), aRange=(d.auraRange||0)*CELL;
+    for(const g of gems){
+      if(g===a||g.isRock) continue;
+      const dx=g.x-a.x, dy=g.y-a.y;
+      if(dx*dx+dy*dy <= aRange*aRange){ g.abuf=Math.max(g.abuf,0)+aDmg; g.rbuf=Math.max(g.rbuf, (d.auraRange? 0.4*qmul(a):0)); }
+    }
+  }
+}
+function creepEffectiveDmg(creep,g,base){
+  const d=gemDef(g);
+  let armor = Math.max(0, (creep.armor - creep.armorDeb));
+  if(d.pierce) armor=0;  // diamond/specials ignore armor
+  const mult = 1 - Math.min(0.75, armor*0.035);
+  return base*mult;
+}
+function dealDamage(creep,g,amount,crit){
+  const real=creepEffectiveDmg(creep,g,amount);
+  creep.hp-=real;
+  if(crit) fx.push({type:"crit",x:creep.x,y:creep.y-creep.r,t:0,life:.5});
+}
+function nearestCreeps(x,y,range,n,exclude){
+  const rr=range*range;
+  const arr=creeps.filter(c=>!c.dead && c!==exclude).map(c=>{
+    const dx=c.x-x,dy=c.y-y; return {c,d2:dx*dx+dy*dy};
+  }).filter(o=>o.d2<=rr).sort((a,b)=>a.d2-b.d2);
+  return arr.slice(0,n).map(o=>o.c);
+}
+function frontTarget(g,range){
+  // creep with most progress (lowest dist-to-exit) within range
+  let best=null, bestDist=1e9;
+  const rr=range*range;
+  for(const c of creeps){
+    if(c.dead) continue;
+    const dx=c.x-g.x, dy=c.y-g.y; if(dx*dx+dy*dy>rr) continue;
+    const cc=Math.floor(c.x/CELL), cr=Math.floor(c.y/CELL);
+    const dd = inBounds(cc,cr)? (dist[idx(cc,cr)]===-1?1e8:dist[idx(cc,cr)]) : 1e8;
+    if(dd<bestDist){ bestDist=dd; best=c; }
+  }
+  return best;
+}
+function gemAttack(g,dt){
+  if(g.isRock) return;
+  const d=gemDef(g); if(!d) return;
+  g.cd-=dt; if(g.cd>0) return;
+  const range=(d.range + (g.rbuf||0))*CELL;
+  const tgt=frontTarget(g,range);
+  if(!tgt){ g.cd=0; return; }
+  const rate=d.rate; g.cd = 1/rate;
+  const dmgBase = gemStat(g,"dmg") * (1+(g.abuf||0));
+
+  let crit=false, dmg=dmgBase;
+  if(d.abil==="crit" && Math.random()<d.crit){ dmg*=d.critx; crit=true; }
+
+  // primary hit
+  dealDamage(tgt,g,dmg,crit);
+  beam(g,tgt,d.abil);
+
+  // ability extras
+  switch(d.abil){
+    case "splash":{
+      const sr=(d.splash||1.2)*CELL*qmul(g);
+      for(const c of creeps){ if(c.dead||c===tgt) continue;
+        const dx=c.x-tgt.x,dy=c.y-tgt.y; if(dx*dx+dy*dy<=sr*sr) dealDamage(c,g,dmg*0.55,false);
+      }
+      fx.push({type:"splash",x:tgt.x,y:tgt.y,t:0,life:.35,r:sr,color:gemColor(g)});
+      if(d.stun && Math.random()<d.stun){ tgt.stunU=performance.now()/1000+d.stunDur; }
+      break;
+    }
+    case "slow":{
+      const slow=Math.min(0.65, d.slow*(1+0.12*g.q));
+      tgt.speed=tgt.baseSpeed*(1-slow); tgt.slowU=performance.now()/1000+d.slowDur;
+      break;
+    }
+    case "poison":{
+      tgt.poisons.push({dps:gemStat(g,"pdps"), until:performance.now()/1000+d.pdur});
+      break;
+    }
+    case "chain":{
+      let prev=tgt, cur=dmg, hops=d.chain+Math.floor(g.q/2), hit=[tgt];
+      for(let i=0;i<hops;i++){
+        const nbs=nearestCreeps(prev.x,prev.y,CELL*2.2,1,null).filter(c=>!hit.includes(c));
+        if(!nbs.length) break;
+        const nx=nbs[0]; cur*=d.falloff; dealDamage(nx,g,cur,false);
+        beam({x:prev.x,y:prev.y},nx,"chain"); hit.push(nx); prev=nx;
+      }
+      if(d.stun && Math.random()<d.stun) tgt.stunU=performance.now()/1000+0.3;
+      break;
+    }
+    case "multi":{
+      const extra=(d.targets-1);
+      const more=nearestCreeps(g.x,g.y,range,extra+1,null).filter(c=>c!==tgt);
+      for(const c of more){ dealDamage(c,g,dmg,false); beam(g,c,"multi"); }
+      if(d.armorcut){ tgt.armorDeb=Math.min(tgt.baseArmor, tgt.armorDeb+d.armorcut*qmul(g)); }
+      break;
+    }
+    case "gold": tgt._goldmul=d.goldmul; break;
+    // fast, crit, aura: handled by base
+  }
+}
+function beam(from,to,kind){ beams.push({x1:from.x,y1:from.y,x2:to.x,y2:to.y,t:0,life:kind==="chain"?.18:.12,kind}); }
+
+//// ---------- Creep update ----------
+function updateCreeps(dt){
+  const now=performance.now()/1000;
+  for(const c of creeps){
+    if(c.dead) continue;
+    // status
+    if(c.slowU && now>c.slowU){ c.speed=c.baseSpeed; c.slowU=0; }
+    const stunned = c.stunU && now<c.stunU;
+    // poison
+    if(c.poisons.length){
+      let total=0;
+      c.poisons=c.poisons.filter(p=>now<p.until);
+      for(const p of c.poisons) total+=p.dps;
+      if(total){ c.hp-=total*dt; }
+    }
+    if(c.hp<=0){ killCreep(c); continue; }
+    if(stunned) continue;
+    // move along flow field
+    const cc=Math.floor(c.x/CELL), cr=Math.floor(c.y/CELL);
+    if(cc===exitCell.c && cr===exitCell.r){ escapeCreep(c); continue; }
+    let ni = inBounds(cc,cr)? next[idx(cc,cr)] : -1;
+    let tx,ty;
+    if(ni===-1){ // fallback: head down
+      tx=c.x; ty=c.y+CELL;
+    } else {
+      const tr=Math.floor(ni/COLS), tcl=ni%COLS;
+      const ctr=cellCenter(tcl,tr); tx=ctr.x; ty=ctr.y;
+    }
+    const dx=tx-c.x, dy=ty-c.y; const dlen=Math.hypot(dx,dy)||1;
+    const step=c.speed*dt;
+    if(step>=dlen){ c.x=tx; c.y=ty; }
+    else { c.x+=dx/dlen*step; c.y+=dy/dlen*step; }
+  }
+  // cull
+  creeps = creeps.filter(c=>!c.dead);
+}
+function killCreep(c){
+  c.dead=true;
+  let g=c.bounty * (c._goldmul||1);
+  gold+=g; addXP(c.xpv);
+  fx.push({type:"die",x:c.x,y:c.y,t:0,life:.4,color:c.color});
+  updateHUD();
+}
+function escapeCreep(c){
+  c.dead=true; lives-=c.liveCost;
+  fx.push({type:"escape",x:c.x,y:c.y,t:0,life:.5});
+  log("A creep reached the exit (−"+c.liveCost+" life).","bad");
+  updateHUD();
+  if(lives<=0){ lives=0; updateHUD(); lose(); }
+}
+function addXP(n){
+  xp+=n;
+  while(xp>=xpNext){
+    xp-=xpNext; cutterLvl++; xpNext=Math.round(xpNext*1.6);
+    log("Cutter level "+cutterLvl+" — better gem odds!","good");
+    fx.push({type:"level"});
+  }
+  updateHUD();
+}
+
+//// ---------- Win / Lose ----------
+function win(){
+  state="over";
+  showOverlay("win","VICTORY","You held the line through all "+MAX_WAVE+" waves. The maze is complete.",
+    "Play Again");
+}
+function lose(){
+  state="over";
+  showOverlay("lose","DEFEAT","The creeps broke through on wave "+wave+". Recut your gems and try again.",
+    "Try Again");
+}
+
+//// ---------- Game loop ----------
+function update(dt){
+  if(state==="wave"){
+    // spawning
+    if(toSpawn>0){
+      spawnTimer-=dt;
+      if(spawnTimer<=0){ spawnCreep(); toSpawn--; spawnTimer = waveDef.boss?0.5:Math.max(0.32, 0.85-wave*0.01); }
+    }
+    for(const g of gems) gemAttack(g,dt);
+    updateCreeps(dt);
+    if(toSpawn===0 && creeps.length===0){ endWave(); }
+  }
+  // effects timers
+  const now=performance.now()/1000;
+  for(const f of fx) f.t+=dt;
+  fx=fx.filter(f=> f.type==="level" ? false : f.t<f.life);
+  for(const b of beams) b.t+=dt;
+  beams=beams.filter(b=>b.t<b.life);
+}
+
+//// ---------- Rendering ----------
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  drawField();
+  drawRocks();
+  drawBeams();
+  drawGems();
+  drawCreeps();
+  drawFx();
+  drawHover();
+  requestAnimationFrame(loop);
+}
+function loop(ts){
+  if(!lastTs) lastTs=ts;
+  let dt=(ts-lastTs)/1000; lastTs=ts;
+  dt=Math.min(dt,0.05);
+  if(state!=="menu"&&state!=="over"){
+    const steps = speed;
+    update(dt*steps);
+  } else { update(0); }
+  draw();
+}
+function drawField(){
+  // subtle grid + spawn/exit lanes
+  ctx.fillStyle="#070910"; ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.strokeStyle="#0f1422"; ctx.lineWidth=1;
+  for(let c=1;c<COLS;c++){ ctx.beginPath(); ctx.moveTo(c*CELL,0); ctx.lineTo(c*CELL,canvas.height); ctx.stroke(); }
+  for(let r=1;r<ROWS;r++){ ctx.beginPath(); ctx.moveTo(0,r*CELL); ctx.lineTo(canvas.width,r*CELL); ctx.stroke(); }
+  // border walls
+  ctx.fillStyle="#10131d";
+  for(let c=0;c<COLS;c++){ ctx.fillRect(c*CELL,0,CELL,CELL); ctx.fillRect(c*CELL,(ROWS-1)*CELL,CELL,CELL); }
+  for(let r=0;r<ROWS;r++){ ctx.fillRect(0,r*CELL,CELL,CELL); ctx.fillRect((COLS-1)*CELL,r*CELL,CELL,CELL); }
+  // spawn / exit
+  const sc=cellCenter(spawnCell.c,spawnCell.r), ec=cellCenter(exitCell.c,exitCell.r);
+  drawPortal(sc.x,sc.y,"#4f86ff","IN");
+  drawPortal(ec.x,ec.y,"#2fd683","OUT");
+}
+function drawPortal(x,y,color,label){
+  const t=performance.now()/600;
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.fillStyle=color+"22"; ctx.fillRect(-CELL/2,-CELL/2,CELL,CELL);
+  ctx.strokeStyle=color; ctx.lineWidth=2; ctx.globalAlpha=.6+.3*Math.sin(t);
+  ctx.beginPath(); ctx.arc(0,0,CELL*0.30,0,Math.PI*2); ctx.stroke();
+  ctx.globalAlpha=1;
+  ctx.fillStyle=color; ctx.font="bold "+(CELL*0.28)+"px Rajdhani, sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle";
+  ctx.fillText(label,0,1);
+  ctx.restore();
+}
+function drawRocks(){
+  for(const g of gems){
+    if(!g.isRock) continue;
+    const x=g.col*CELL, y=g.row*CELL, p=CELL*0.12;
+    ctx.fillStyle="#1c212e";
+    roundRect(x+p,y+p,CELL-2*p,CELL-2*p,4); ctx.fill();
+    ctx.fillStyle="#262d3d";
+    roundRect(x+p+1,y+p+1,CELL-2*p-3,CELL-2*p-5,3); ctx.fill();
+    ctx.strokeStyle="#0c0f17"; ctx.lineWidth=1; ctx.stroke();
+  }
+}
+function roundRect(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+
+function drawGems(){
+  const now=performance.now()/1000;
+  // range ring for selected
+  if(selected && !selected.isRock){
+    const d=gemDef(selected); const range=(d.range+(selected.rbuf||0))*CELL;
+    ctx.strokeStyle=gemColor(selected)+"66"; ctx.fillStyle=gemColor(selected)+"11";
+    ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(selected.x,selected.y,range,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  }
+  for(const g of gems){
+    if(g.isRock) continue;
+    const pulse = (g.temp && state==="pick") ? (0.6+0.4*Math.sin(now*6)) : 1;
+    const selRing = combineMode && combineSel.includes(g);
+    drawGemShape(g.x,g.y,CELL*0.34,gemColor(g),g, pulse, selRing);
+  }
+}
+function drawGemShape(x,y,rad,color,g,pulse,ring){
+  ctx.save(); ctx.translate(x,y);
+  // glow
+  ctx.shadowColor=color; ctx.shadowBlur=14*(pulse||1);
+  // brilliant-cut silhouette
+  const pts=[[0,-rad],[ -rad*0.78,-rad*0.25],[-rad*0.52,rad*0.85],[rad*0.52,rad*0.85],[rad*0.78,-rad*0.25]];
+  const grd=ctx.createLinearGradient(0,-rad,0,rad);
+  grd.addColorStop(0,"#ffffff"); grd.addColorStop(.35,color); grd.addColorStop(1,shade(color,-30));
+  ctx.fillStyle=grd; ctx.beginPath();
+  ctx.moveTo(pts[0][0],pts[0][1]); for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i][0],pts[i][1]); ctx.closePath(); ctx.fill();
+  ctx.shadowBlur=0;
+  // facets
+  ctx.strokeStyle="#ffffff55"; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(0,-rad); ctx.lineTo(0,rad*0.85);
+  ctx.moveTo(-rad*0.78,-rad*0.25); ctx.lineTo(rad*0.78,-rad*0.25);
+  ctx.moveTo(0,-rad); ctx.lineTo(-rad*0.78,-rad*0.25); ctx.lineTo(-rad*0.52,rad*0.85);
+  ctx.moveTo(0,-rad); ctx.lineTo(rad*0.78,-rad*0.25); ctx.lineTo(rad*0.52,rad*0.85);
+  ctx.stroke();
+  // sparkle
+  ctx.fillStyle="#ffffffcc"; ctx.beginPath(); ctx.arc(-rad*0.18,-rad*0.35,rad*0.12,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+  // quality pips (not for specials)
+  if(g && !g.special){
+    const n=g.q+1;
+    for(let i=0;i<5;i++){
+      ctx.beginPath();
+      const px=x-(rad*0.7)+ i*(rad*0.35), py=y+rad*1.0;
+      ctx.fillStyle = i<n? color : "#2a3346";
+      ctx.arc(px,py,1.7,0,Math.PI*2); ctx.fill();
+    }
+  } else if(g && g.special){
+    // star marker for specials
+    ctx.fillStyle=color; ctx.font="bold "+(rad*0.7)+"px Rajdhani"; ctx.textAlign="center"; ctx.textBaseline="middle";
+    ctx.fillText("✦", x, y+rad*1.25);
+  }
+  if(ring){
+    ctx.strokeStyle="#b577ff"; ctx.lineWidth=2; ctx.setLineDash([4,3]);
+    ctx.beginPath(); ctx.arc(x,y,rad*1.5,0,Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+  }
+}
+function shade(hex,amt){
+  let c=hex.replace('#',''); if(c.length===3) c=c.split('').map(x=>x+x).join('');
+  let r=clamp(parseInt(c.substr(0,2),16)+amt,0,255),
+      gg=clamp(parseInt(c.substr(2,2),16)+amt,0,255),
+      b=clamp(parseInt(c.substr(4,2),16)+amt,0,255);
+  return `rgb(${r},${gg},${b})`;
+}
+function drawCreeps(){
+  const now=performance.now()/1000;
+  for(const c of creeps){
+    if(c.dead) continue;
+    // body
+    ctx.save();
+    const slowed=c.slowU&&now<c.slowU, stunned=c.stunU&&now<c.stunU, pois=c.poisons.length>0;
+    ctx.shadowColor=c.color; ctx.shadowBlur=8;
+    ctx.fillStyle=c.color; ctx.beginPath(); ctx.arc(c.x,c.y,c.r,0,Math.PI*2); ctx.fill();
+    ctx.shadowBlur=0;
+    ctx.fillStyle="#0008"; ctx.beginPath(); ctx.arc(c.x,c.y,c.r*0.55,0,Math.PI*2); ctx.fill();
+    if(slowed){ ctx.strokeStyle="#9fd0ff"; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(c.x,c.y,c.r+2,0,Math.PI*2); ctx.stroke(); }
+    if(pois){ ctx.fillStyle="#2fd68399"; ctx.beginPath(); ctx.arc(c.x+c.r*0.5,c.y-c.r*0.5,2.2,0,Math.PI*2); ctx.fill(); }
+    if(stunned){ ctx.fillStyle="#ffd166"; ctx.font="bold 12px Rajdhani"; ctx.textAlign="center"; ctx.fillText("✸",c.x,c.y-c.r-4); }
+    ctx.restore();
+    // hp bar
+    const w=c.r*2.1, h=3, hpx=c.x-w/2, hpy=c.y-c.r-7;
+    ctx.fillStyle="#000a"; ctx.fillRect(hpx-1,hpy-1,w+2,h+2);
+    ctx.fillStyle="#26303f"; ctx.fillRect(hpx,hpy,w,h);
+    const frac=clamp(c.hp/c.maxhp,0,1);
+    ctx.fillStyle = frac>.5?"#56e39f":frac>.25?"#ffcb3d":"#ff6b6b";
+    ctx.fillRect(hpx,hpy,w*frac,h);
+  }
+}
+function drawBeams(){
+  for(const b of beams){
+    const a=1-b.t/b.life;
+    ctx.globalAlpha=a;
+    if(b.kind==="chain"){
+      ctx.strokeStyle="#d6b3ff"; ctx.lineWidth=2.2; ctx.shadowColor="#b577ff"; ctx.shadowBlur=8;
+      // jagged
+      ctx.beginPath(); ctx.moveTo(b.x1,b.y1);
+      const mx=(b.x1+b.x2)/2+(Math.random()-.5)*8, my=(b.y1+b.y2)/2+(Math.random()-.5)*8;
+      ctx.lineTo(mx,my); ctx.lineTo(b.x2,b.y2); ctx.stroke(); ctx.shadowBlur=0;
+    } else {
+      ctx.strokeStyle = b.kind==="multi"?"#37e3cf":"#ffffff";
+      ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(b.x1,b.y1); ctx.lineTo(b.x2,b.y2); ctx.stroke();
+    }
+    ctx.globalAlpha=1; ctx.shadowBlur=0;
+  }
+}
+function drawFx(){
+  for(const f of fx){
+    const a=1-f.t/f.life;
+    ctx.globalAlpha=a;
+    if(f.type==="splash"){ ctx.strokeStyle=f.color; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(f.x,f.y,f.r*(f.t/f.life),0,Math.PI*2); ctx.stroke(); }
+    else if(f.type==="die"){ ctx.fillStyle=f.color; for(let i=0;i<6;i++){ const an=i/6*Math.PI*2; const d=18*(f.t/f.life); ctx.beginPath(); ctx.arc(f.x+Math.cos(an)*d,f.y+Math.sin(an)*d,2,0,Math.PI*2); ctx.fill(); } }
+    else if(f.type==="escape"){ ctx.strokeStyle="#ff6b6b"; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(f.x,f.y,20*(f.t/f.life),0,Math.PI*2); ctx.stroke(); }
+    else if(f.type==="place"||f.type==="keep"||f.type==="forge"){ ctx.strokeStyle=f.color; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(f.x,f.y, (f.type==="forge"?28:20)*(f.t/f.life),0,Math.PI*2); ctx.stroke(); }
+    else if(f.type==="crit"){ ctx.fillStyle="#fff"; ctx.font="bold 13px Rajdhani"; ctx.textAlign="center"; ctx.fillText("CRIT", f.x, f.y-14*(f.t/f.life)); }
+    ctx.globalAlpha=1;
+  }
+}
+function drawHover(){
+  if(state!=="build"||combineMode) return;
+  const {c,r}=hoverCell;
+  if(!inBounds(c,r)) return;
+  if(c===0||r===0||c===COLS-1||r===ROWS-1) return;
+  if(grid[idx(c,r)]) return;
+  if((c===spawnCell.c&&r===spawnCell.r)||(c===exitCell.c&&r===exitCell.r)) return;
+  const ok = placed<GEMS_PER_WAVE && pathExistsWith({c,r});
+  ctx.fillStyle = ok? "#37e3cf22":"#ff6b6b22";
+  ctx.strokeStyle = ok? "#37e3cf":"#ff6b6b"; ctx.lineWidth=1.5;
+  roundRect(c*CELL+2,r*CELL+2,CELL-4,CELL-4,4); ctx.fill(); ctx.stroke();
+}
+function flashCell(c,r,color){ fx.push({type:"escape",x:c*CELL+CELL/2,y:r*CELL+CELL/2,t:0,life:.35}); }
+
+//// ---------- UI / HUD ----------
+function setPrompt(html){ elPrompt.innerHTML=html; }
+function updateHUD(){
+  $("s-wave").textContent = wave+"/"+MAX_WAVE;
+  $("s-lives").textContent = lives;
+  $("s-gold").textContent = Math.floor(gold);
+  $("s-level").textContent = cutterLvl;
+  // charges
+  const ch=$("charges"); ch.innerHTML="";
+  if(state==="build"||state==="pick"){
+    for(let i=0;i<GEMS_PER_WAVE;i++){ const d=document.createElement("div"); d.className="charge"+(i<placed?" full":""); ch.appendChild(d); }
+  }
+  // hint
+  let hint="";
+  if(state==="build") hint = placed<GEMS_PER_WAVE ? `Click the field — ${GEMS_PER_WAVE-placed} gem${GEMS_PER_WAVE-placed>1?"s":""} left to place.` : "Press Start Wave.";
+  else if(state==="pick") hint="Click a glowing gem to keep it.";
+  else if(state==="wave") hint="Gems fire automatically. Survive.";
+  $("phase-hint").textContent=hint;
+}
+function selectGem(g){
+  selected=g;
+  const box=$("sel"), rr=$("btn-reroll");
+  if(!g||g.isRock){ box.classList.remove("show"); return; }
+  box.classList.add("show");
+  const d=gemDef(g);
+  $("sel-chip").style.background=`radial-gradient(circle at 40% 30%, #fff, ${gemColor(g)} 55%, ${shade(gemColor(g),-40)})`;
+  $("sel-chip").style.boxShadow=`0 0 14px ${gemColor(g)}`;
+  $("sel-name").textContent=d.name;
+  $("sel-qual").textContent = g.special? "SPECIAL GEM" : QNAMES[g.q].toUpperCase()+" · QUALITY "+(g.q+1)+"/5";
+  $("sel-desc").textContent=d.blurb;
+  const range=(d.range+(g.rbuf||0)).toFixed(1);
+  const dmg=Math.round(gemStat(g,"dmg")*(1+(g.abuf||0)));
+  const kv=$("sel-kv");
+  let rows=[["Damage",dmg],["Range",range],["Rate",d.rate.toFixed(1)+"/s"],["Ability",d.abil]];
+  if(g.abuf) rows.push(["Aura buff","+"+Math.round(g.abuf*100)+"%"]);
+  kv.innerHTML=rows.map(([k,v])=>`<div><span class="lab">${k}</span><span class="num">${v}</span></div>`).join("");
+  rr.style.display = (state==="build"&&g.temp)?"block":"none";
+}
+
+//// ---------- Input ----------
+function canvasCell(ev){
+  const rect=canvas.getBoundingClientRect();
+  const px=(ev.clientX??(ev.touches&&ev.touches[0].clientX))-rect.left;
+  const py=(ev.clientY??(ev.touches&&ev.touches[0].clientY))-rect.top;
+  const sx=canvas.width/rect.width, sy=canvas.height/rect.height;
+  return {c:Math.floor(px*sx/CELL), r:Math.floor(py*sy/CELL)};
+}
+function gemAt(c,r){ return gems.find(g=>g.col===c&&g.row===r); }
+function onClick(ev){
+  if(state==="menu"||state==="over") return;
+  const {c,r}=canvasCell(ev);
+  if(!inBounds(c,r)) return;
+  const g=gemAt(c,r);
+  if(combineMode){ if(g&&!g.isRock) clickCombine(g); return; }
+  if(state==="pick"){ if(g&&g.temp) keepGem(g); return; }
+  if(state==="build"){
+    if(g){ selectGem(g); }
+    else tryPlaceGem(c,r);
+  } else if(g){ selectGem(g); }
+}
+canvas.addEventListener("click",onClick);
+canvas.addEventListener("mousemove",ev=>{ hoverCell=canvasCell(ev); });
+canvas.addEventListener("mouseleave",()=>{ hoverCell={c:-1,r:-1}; });
+canvas.addEventListener("touchstart",ev=>{ ev.preventDefault(); onClick(ev); },{passive:false});
+
+$("btn-main").addEventListener("click",()=>{ if(state==="build") startWave(); });
+$("btn-combine").addEventListener("click",()=>{ if(state==="build") toggleCombine(); });
+$("btn-forge").addEventListener("click",forge);
+$("btn-clearsel").addEventListener("click",()=>{ combineSel=[]; refreshCombine(); });
+$("btn-reroll").addEventListener("click",rerollSelected);
+$("btn-speed").addEventListener("click",()=>{ speed = speed===1?2:speed===2?3:1; $("btn-speed").textContent="▶ "+speed+"×"; });
+$("over-btn").addEventListener("click",startGame);
+
+//// ---------- Setup panels ----------
+function buildLegend(){
+  const el=$("legend");
+  el.innerHTML = GEM_KEYS.map(k=>{
+    const d=GEMS[k];
+    return `<div class="lg"><span class="dot" style="color:${d.color};background:${d.color}"></span><span>${d.name}<small>${d.abil}</small></span></div>`;
+  }).join("");
+  const rc=$("recipes");
+  const fmt=ing=>ing.map(i=>{
+    const t = i.type==="any"?"Any":GEMS[i.type].name;
+    const q = i.q===-1?"":QNAMES[i.q]+" ";
+    return q+t;
+  }).join(" + ");
+  rc.innerHTML = `<div class="recipe"><b>Upgrade:</b> 2× same gem & quality <span class="arw">→</span> +1 quality</div>` +
+    RECIPES.map(r=>`<div class="recipe">${fmt(r.ing)} <span class="arw">→</span> <b>${SPECIALS[r.out].name}</b></div>`).join("");
+}
+
+//// ---------- Overlay ----------
+function showOverlay(cls,title,sub,btn){
+  const ov=$("overlay"), card=$("over-card");
+  card.className="over-card "+cls;
+  $("over-title").textContent=title; $("over-sub").textContent=sub; $("over-btn").textContent=btn;
+  $("over-help").style.display = cls==="" ? "block":"none";
+  ov.classList.add("show");
+}
+function hideOverlay(){ $("overlay").classList.remove("show"); }
+
+//// ---------- Start / reset ----------
+function startGame(){
+  hideOverlay();
+  gems=[]; creeps=[]; fx=[]; beams=[]; combineSel=[]; combineMode=false;
+  $("btn-combine").classList.remove("on"); $("combinebox").classList.remove("show");
+  wave=0; lives=START_LIVES; gold=START_GOLD; xp=0; cutterLvl=1; xpNext=8; placed=0; speed=1;
+  $("btn-speed").textContent="▶ 1×";
+  buildGrid(); resize(); rebuildFlow();
+  beginBuild();
+  log("New game — build your maze.","good");
+  updateHUD();
+}
+
+//// ---------- Boot ----------
+function boot(){
+  buildGrid(); resize(); rebuildFlow();
+  buildLegend();
+  updateHUD();
+  showOverlay("","GEM TD",
+    "Build a maze of gems. Each wave you place 5 random gems — then keep just one. The rest crystallize into rock walls that lengthen the creeps' path to the exit.",
+    "Start Cutting");
+  $("over-help").style.display="block";
+  state="menu";
+  requestAnimationFrame(loop);
+}
+boot();
+</script>
+</body>
+</html>
